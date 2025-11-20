@@ -30,6 +30,8 @@ static void printHelp(int, char *argv[]) {  // NOLINT
 }
 
 int rdr_main(int argc, char *argv[]) {  // NOLINT: alias of main function
+  printf("DEBUG: Entered rdr_main.\n");
+  fflush(stdout);
   bool quiet = false;
   fs::path source_path{};
   std::optional<std::string> output_path{};
@@ -67,16 +69,25 @@ int rdr_main(int argc, char *argv[]) {  // NOLINT: alias of main function
       source_path = arg;
     }
   }
-
+  printf("DEBUG: Argument parsing finished.\n");
+  fflush(stdout);
   // Init logger first anyway
   InitLogger(true, quiet);
+  printf("DEBUG: Logger initialized.\n");
+  fflush(stdout);
 
   // Register factory classes
   Factory::doRegisterAllClasses();
+  printf("DEBUG: Factory classes registered.\n");
+  fflush(stdout);
 
-  Info_("===    RDR171 Launching    ===");
-  Info_("===    HAPPY RENDERING!    ===");
+  // Info_("===    RDR171 Launching    ===");
+  // Info_("===    HAPPY RENDERING!    ===");
+  printf("DEBUG: ===    RDR171 Launching    ===\n");
+  printf("DEBUG: ===    HAPPY RENDERING!    ===\n");
 
+  printf("DEBUG: About to check file extension.\n");
+  fflush(stdout);
   if (source_path.extension() != ".json") {
     Exception_("Please specify a JSON file as the scene configuration");
     printHelp(argc, argv);
@@ -92,8 +103,10 @@ int rdr_main(int argc, char *argv[]) {  // NOLINT: alias of main function
   // Initialize file resolver
   FileResolver::setBasePath(source_path.parent_path());
 
-  Info_("FileResolver has been initialized with base path [ {} ]",
-      source_path.parent_path().string());
+  // Info_("FileResolver has been initialized with base path [ {} ]",
+  //     source_path.parent_path().string());
+  printf("DEBUG: FileResolver has been initialized with base path [ %s ]\n",
+      source_path.parent_path().string().c_str());
 
   /// Load config from json file
   std::ifstream fin;
@@ -103,7 +116,9 @@ int rdr_main(int argc, char *argv[]) {  // NOLINT: alias of main function
     Exception_("Can not open the JSON file [ {} ]", source_path.string());
     return 1;
   } else {
-    Info_("JSON file loaded from [ {} ]", source_path.string());
+    // Info_("JSON file loaded from [ {} ]", source_path.string());
+    printf(
+        "DEBUG: JSON file loaded from [ %s ]\n", source_path.string().c_str());
   }
 
   // Parse json object to Config
@@ -122,9 +137,12 @@ int rdr_main(int argc, char *argv[]) {  // NOLINT: alias of main function
 
   if (!output_path.has_value())
     output_path = source_path.filename().stem().string() + ".exr";
-  Info_("Root Properties initialized with [ JSON ]. Start building scene...");
+  // Info_("Root Properties initialized with [ JSON ]. Start building
+  // scene...");
+  printf(
+      "DEBUG: Root Properties initialized with [ JSON ]. Start building "
+      "scene...\n");
   ref<RenderInterface> render = make_ref<NativeRender>(root_properties);
-
   render->initialize();
   render->preprocess();
 
@@ -132,7 +150,9 @@ int rdr_main(int argc, char *argv[]) {  // NOLINT: alias of main function
    // Start rendering
    *===---------------------------------------------------------------===*/
 
-  Info_("Scene built. Start rendering...");
+  // Info_("Scene built. Start rendering...");
+  printf("DEBUG: Scene built. Start rendering...\n");
+  fflush(stdout);
   auto start = std::chrono::steady_clock::now();
 
   render->render();
@@ -142,7 +162,9 @@ int rdr_main(int argc, char *argv[]) {  // NOLINT: alias of main function
   auto time =
       std::chrono::duration_cast<std::chrono::seconds>(end - start).count();
 
-  Info_("Render Finished in {}s", time);
+  // Info_("Render Finished in {}s", time);
+  printf("DEBUG: Render Finished in %lds\n", time);
+  fflush(stdout);
   return 0;
 }
 

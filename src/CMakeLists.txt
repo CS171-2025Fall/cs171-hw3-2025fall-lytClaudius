@@ -18,6 +18,7 @@ target_link_libraries(renderer_lib PUBLIC
 if (USE_EMBREE)
   target_link_libraries(renderer_lib PUBLIC embree)
   target_compile_definitions(renderer_lib PUBLIC USE_EMBREE)
+  target_compile_definitions(renderer_lib PUBLIC SPDLOG_COMPILED_LIB)
   message(STATUS "Embree is enabled")
 else()
   message(STATUS "Embree is disabled")
@@ -25,7 +26,12 @@ endif()
 target_include_directories(renderer_lib PUBLIC "${PROJECT_SOURCE_DIR}/include")
 
 add_executable(renderer "${PROJECT_SOURCE_DIR}/src/main.cpp")
-target_link_libraries(renderer PRIVATE renderer::lib)
+target_link_libraries(renderer PRIVATE renderer::lib stdc++fs)
+
+if(CMAKE_COMPILER_IS_GNUCXX)
+  message(STATUS "Compiler is GNU C++, linking stdc++fs for std::filesystem support.")
+  target_link_libraries(renderer PRIVATE stdc++fs)
+endif()
 
 add_executable(conventions "${PROJECT_SOURCE_DIR}/src/conventions.cpp")
 target_link_libraries(conventions PRIVATE renderer::lib)

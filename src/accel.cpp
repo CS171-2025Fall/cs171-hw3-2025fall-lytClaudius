@@ -43,7 +43,22 @@ bool AABB::intersect(const Ray &ray, Float *t_in, Float *t_out) const {
   //    for getting the inverse direction of the ray.
   // @see Min/Max/ReduceMin/ReduceMax
   //    for vector min/max operations.
-  UNIMPLEMENTED;
+
+  Vec3f origin  = ray.origin;
+  Vec3f inv_dir = ray.safe_inverse_direction;
+  Vec3f t0s     = (low_bnd - origin) * inv_dir;
+  Vec3f t1s     = (upper_bnd - origin) * inv_dir;
+
+  Float tmin = ReduceMax(Min(t0s, t1s));
+  Float tmax = ReduceMin(Max(t0s, t1s));
+
+  if (tmin > tmax || tmax < 0) {
+    return false;
+  }
+
+  *t_in  = Max(0.0f, tmin);
+  *t_out = tmax;
+  return true;
 }
 
 /* ===================================================================== *
@@ -90,12 +105,24 @@ bool TriangleIntersect(Ray &ray, const uint32_t &triangle_index,
   //
   // Useful Functions:
   // You can use @see Cross and @see Dot for determinant calculations.
+  InternalVecType o = Cast<InternalScalarType>(ray.origin);
+  InternalVecType d = Cast<InternalScalarType>(ray.direction);
 
-  // Delete the following lines after you implement the function
-  InternalScalarType u = InternalScalarType(0);
-  InternalScalarType v = InternalScalarType(0);
-  InternalScalarType t = InternalScalarType(0);
-  UNIMPLEMENTED;
+  InternalVecType s  = o - v0;
+  InternalVecType e1 = v1 - v0;
+  InternalVecType e2 = v2 - v0;
+
+  InternalVecType s1       = Cross(d, e2);
+  InternalVecType s2       = Cross(s, e1);
+  InternalScalarType denom = Dot(s1, e1);
+  if (abs(denom) < 1e-12) return false;
+
+  InternalScalarType t = Dot(s2, e2) / denom;
+  if (t < ray.t_min || t > ray.t_max) return false;
+  InternalScalarType u = Dot(s1, s) / denom;
+  if (u < 0) return false;
+  InternalScalarType v = Dot(s2, d) / denom;
+  if (v < 0 || u + v > 1) return false;
 
   // We will reach here if there is an intersection
 

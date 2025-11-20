@@ -9,7 +9,7 @@ if(CCACHE_FOUND)
 endif(CCACHE_FOUND)
 
 option(USE_EMBREE "Enable embree4 as acceleration structure" OFF)
-set(USE_SANITIZER
+set(Address
   ""
   CACHE
   STRING

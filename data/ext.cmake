@@ -1,14 +1,32 @@
 # All packages required
 CPMAddPackage("gh:fmtlib/fmt#9.1.0")
-CPMAddPackage("gh:nlohmann/json@3.11.2")
-CPMAddPackage("gh:tinyobjloader/tinyobjloader#v2.0.0rc10")
+#CPMAddPackage("gh:nlohmann/json@3.11.2")
+CPMAddPackage(
+    NAME json
+    GIT_REPOSITORY https://gitee.com/mirrors/nlohmann-json.git
+    GIT_TAG v3.11.2
+)
+#CPMAddPackage("gh:tinyobjloader/tinyobjloader#v2.0.0rc10")
+CPMAddPackage(
+  NAME tinyobjloader
+  GIT_REPOSITORY https://github.com/tinyobjloader/tinyobjloader.git
+  GIT_TAG v2.0.0rc10
+  GIT_SHALLOW TRUE
+)
 CPMAddPackage("gh:richgel999/miniz#3.0.2")
 
+# CPMAddPackage(
+#   NAME spdlog
+#   GIT_REPOSITORY https://github.com/gabime/spdlog.git
+#   GIT_TAG v1.11.0
+#   OPTIONS "SPDLOG_FMT_EXTERNAL ON"
+# )
 CPMAddPackage(
   NAME spdlog
   GIT_REPOSITORY https://github.com/gabime/spdlog.git
   GIT_TAG v1.11.0
   OPTIONS "SPDLOG_FMT_EXTERNAL ON"
+  #GIT_SHALLOW TRUE
 )
 
 CPMAddPackage(

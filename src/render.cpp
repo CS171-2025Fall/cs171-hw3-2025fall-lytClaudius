@@ -14,6 +14,9 @@ void NativeRender::initialize() {
   // Initialization is break into steps
   // Pass 1: create all objects with property and fill the
   // CrossConfigurationContext
+  printf(
+      "DEBUG: NativeRender::initialize() - Start initializing "
+      "CrossConfigurationContext...\n");
   cross_context.root_properties = props;
   cross_context.film =
       RDR_CREATE_CLASS(Film, props.getProperty<Properties>("film"));
@@ -24,6 +27,9 @@ void NativeRender::initialize() {
       RDR_CREATE_CLASS(Integrator, props.getProperty<Properties>("integrator"));
 
   // Initialize the optional filter
+  printf(
+      "DEBUG: NativeRender::initialize() - Initializing "
+      "ReconstructionFilter...\n");
   cross_context.filter = RDR_CREATE_CLASS(ReconstructionFilter,
       props.getProperty<Properties>("film").getProperty<Properties>(
           "filter", Properties{}));  // else return an empty property

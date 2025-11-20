@@ -5,6 +5,8 @@
 #ifndef __BVH_TREE_H__
 #define __BVH_TREE_H__
 
+#include <algorithm>
+
 #include "rdr/accel.h"
 #include "rdr/platform.h"
 #include "rdr/primitive.h"
@@ -132,7 +134,6 @@ typename BVHTree<_>::IndexType BVHTree<_>::build(
   AABB prebuilt_aabb;
   for (IndexType span_index = span_left; span_index < span_right; ++span_index)
     prebuilt_aabb.unionWith(nodes[span_index].getAABB());
-
   // TODO(HW3): setup the stop criteria
   //
   // You should fill in the stop criteria here.
@@ -143,8 +144,7 @@ typename BVHTree<_>::IndexType BVHTree<_>::build(
   // @see span_left: The left index of the current span
   // @see span_right: The right index of the current span
   //
-  /* if ( */ UNIMPLEMENTED; /* ) */
-  {
+  if (depth >= CUTOFF_DEPTH || span_right - span_left <= 2) {
     // create leaf node
     const auto &node = nodes[span_left];
     InternalNode result(span_left, span_right);
@@ -181,7 +181,13 @@ use_median_heuristic:
     //
     // You may find `std::nth_element` useful here.
 
-    UNIMPLEMENTED;
+    std::nth_element(nodes.begin() + span_left,
+                     nodes.begin() + split,
+                     nodes.begin() + span_right,
+                     [dim](const NodeType &a, const NodeType &b) {
+                       return a.getAABB().getCenter()[dim] <
+                              b.getAABB().getCenter()[dim];
+                     });
 
     // clang-format on
   } else if (hprofile == EHeuristicProfile::ESurfaceAreaHeuristic) {

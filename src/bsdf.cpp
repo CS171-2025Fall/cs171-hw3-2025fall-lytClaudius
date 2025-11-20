@@ -3,6 +3,7 @@
 #include "rdr/fresnel.h"
 #include "rdr/interaction.h"
 #include "rdr/math_aliases.h"
+#include "rdr/math_utils.h"
 #include "rdr/platform.h"
 
 RDR_NAMESPACE_BEGIN
@@ -103,8 +104,14 @@ Vec3f PerfectRefraction::sample(
   // You may find the following functions useful:
   // @see Refract for refraction calculation.
   // @see Reflect for reflection calculation.
-
-  UNIMPLEMENTED;
+  Vec3f wi       = Vec3f(0.0);
+  bool refracted = Refract(interaction.wo, normal, eta_corrected, wi);
+  if (!refracted) {
+    // Total internal reflection
+    interaction.wi = Reflect(interaction.wo, normal);
+  } else {
+    interaction.wi = wi;
+  }
 
   // Set the pdf and return value, we dont need to understand the value now
   if (pdf != nullptr) *pdf = 1.0F;
