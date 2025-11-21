@@ -26,6 +26,11 @@ public:
   std::string toString() const override                     = 0;
 };
 
+struct PointLight {
+  Vec3f position;
+  Vec3f flux;
+};
+
 /// @brief A simple & dirty integrator that only performs direct illumination
 /// estimation using relative simple methods.
 /// In this integrator, the light source is hardcoded as a point light. And
@@ -33,10 +38,26 @@ public:
 class IntersectionTestIntegrator : public Integrator {
 public:
   IntersectionTestIntegrator(const Properties &props) : Integrator(props) {
-    point_light_position = props.getProperty<Vec3f>(
-        "point_light_position", Vec3f(0.0F, 5.0F, 0.0F));
-    point_light_flux =
-        props.getProperty<Vec3f>("point_light_flux", Vec3f(1.0F, 1.0F, 1.0F));
+    if (props.hasProperty("point_lights")) {
+      const auto &lights_props =
+          props.getProperty<std::vector<Properties>>("point_lights");
+      for (const auto &light_prop : lights_props) {
+        PointLight light;
+        light.position = light_prop.getProperty<Vec3f>("position");
+        light.flux     = light_prop.getProperty<Vec3f>("flux");
+        point_lights.push_back(light);
+      }
+    } else if (props.hasProperty("area_lights")) {
+      const auto &lights_props =
+          props.getProperty<std::vector<Properties>>("area_lights");
+    } else {
+      PointLight light;
+      light.position = props.getProperty<Vec3f>(
+          "point_light_position", Vec3f(0.0F, 5.0F, 0.0F));
+      light.flux =
+          props.getProperty<Vec3f>("point_light_flux", Vec3f(1.0F, 1.0F, 1.0F));
+      point_lights.push_back(light);
+    }
 
     max_depth = props.getProperty<int>("max_depth", 16);
     spp       = props.getProperty<int>("spp", 8);
@@ -51,22 +72,23 @@ public:
   std::string toString() const override {
     std::ostringstream ss;
     ss << "IntersectionTestIntegrator[\n"
-       << format("  point_light_position = {}\n", point_light_position)
-       << format("  point_light_flux     = {}\n", point_light_flux)
+       << format("  num_point_lights    = {}\n", point_lights.size())
        << format("  max_depth           = {}\n", max_depth)
        << format("  spp                 = {}\n", spp) << "]";
     return ss.str();
   }
 
   /// @brief Compute direct lighting at the interaction point
-  Vec3f directLighting(ref<Scene> scene, SurfaceInteraction &interaction) const;
+  Vec3f directLighting(ref<Scene> scene, SurfaceInteraction &interaction,
+      Sampler &sampler) const;
 
 protected:
   /// The position of the point light
-  Vec3f point_light_position;
+  // Vec3f point_light_position;
 
   /// The radiance of the point light
-  Vec3f point_light_flux;
+  // Vec3f point_light_flux;
+  std::vector<PointLight> point_lights;
 
   int max_depth, spp;
 };

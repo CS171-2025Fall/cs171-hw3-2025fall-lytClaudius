@@ -127,16 +127,16 @@ Vec3f IntersectionTestIntegrator::Li(
     return color;
   }
 
-  color = directLighting(scene, interaction);
+  color = directLighting(scene, interaction, sampler);
   return color;
 }
 
 Vec3f IntersectionTestIntegrator::directLighting(
-    ref<Scene> scene, SurfaceInteraction &interaction) const {
+    ref<Scene> scene, SurfaceInteraction &interaction, Sampler &sampler) const {
   Vec3f color(0, 0, 0);
-  Float dist_to_light = Norm(point_light_position - interaction.p);
-  Vec3f light_dir     = Normalize(point_light_position - interaction.p);
-  auto test_ray       = DifferentialRay(interaction.p, light_dir);
+  // Float dist_to_light = Norm(point_light_position - interaction.p);
+  // Vec3f light_dir     = Normalize(point_light_position - interaction.p);
+  // auto test_ray       = DifferentialRay(interaction.p, light_dir);
 
   // TODO(HW3): Test for occlusion
   //
@@ -152,17 +152,14 @@ Vec3f IntersectionTestIntegrator::directLighting(
   //    intersection information.
   //
   //    You can use iteraction.p to get the intersection position.
-  //
-  // if (scene->intersect(test_ray, interaction)) {
-  //   return Vec3f(0.0f);
-  // }
-  // test_ray = interaction.spawnRay(light_dir);
-  test_ray.setTimeMax(dist_to_light);
 
-  SurfaceInteraction shadow_it;
-  if (scene->intersect(test_ray, shadow_it)) {
-    return color;
-  }
+  // test_ray = interaction.spawnRay(light_dir);
+  // test_ray.setTimeMax(dist_to_light);
+
+  // SurfaceInteraction shadow_it;
+  // if (scene->intersect(test_ray, shadow_it)) {
+  //   return color;
+  // }
 
   // Not occluded, compute the contribution using perfect diffuse diffuse model
   // Perform a quick and dirty check to determine whether the BSDF is ideal
@@ -179,14 +176,95 @@ Vec3f IntersectionTestIntegrator::directLighting(
     // used to determine the value of color.
 
     // The angle between light direction and surface normal
-    Float cos_theta =
-        std::max(Dot(light_dir, interaction.normal), 0.0f);  // one-sided
+    // Float cos_theta =
+    //     std::max(Dot(light_dir, interaction.normal), 0.0f);  // one-sided
 
-    // You should assign the value to color
-    // color = ...
-    Vec3f albedo = bsdf->evaluate(interaction);
-    color        = albedo * cos_theta *
-            (point_light_flux / (dist_to_light * dist_to_light));
+    // // You should assign the value to color
+    // // color = ...
+    // Vec3f albedo = bsdf->evaluate(interaction);
+    // color        = albedo * cos_theta *
+    //         (point_light_flux / (dist_to_light * dist_to_light));
+
+    // multiple point lights
+    // if (!point_lights.empty()) {
+    //   for (const auto &light : point_lights) {
+    // const Vec3f &light_position = light.position;
+    // const Vec3f &light_flux     = light.flux;
+
+    // Float dist_to_light = Norm(light_position - interaction.p);
+    // Vec3f light_dir     = Normalize(light_position - interaction.p);
+
+    // auto test_ray = DifferentialRay(interaction.p, light_dir);
+    // test_ray.setTimeMax(dist_to_light);
+
+    // SurfaceInteraction shadow_it;
+    // if (scene->intersect(test_ray, shadow_it)) {
+    //   continue;
+    // }
+
+    // Float cos_theta =
+    //     std::max(Dot(light_dir, interaction.normal), 0.0f);  // one-sided
+
+    // Vec3f albedo = bsdf->evaluate(interaction);
+
+    // Vec3f contribution =
+    //     albedo * cos_theta * (light_flux / (dist_to_light *
+    //     dist_to_light));
+
+    // color += contribution;
+    //   }
+    // }
+    // area lights
+    const auto &area_lights          = scene->getLights();
+    constexpr int AREA_LIGHT_SAMPLES = 8;
+
+    if (!area_lights.empty()) {
+      for (const auto &light : area_lights) {
+        const AreaLight *area_light =
+            dynamic_cast<const AreaLight *>(light.get());
+        if (!area_light) {
+          continue;
+        }
+        Vec3f L_dir(0.0);
+
+        for (int i = 0; i < AREA_LIGHT_SAMPLES; ++i) {
+          SurfaceInteraction light_interaction =
+              area_light->sample(interaction, sampler);
+
+          Vec3f light_dir = Normalize(light_interaction.p - interaction.p);
+          Float dist      = Norm(light_interaction.p - interaction.p);
+
+          auto test_ray = interaction.spawnRayTo(light_interaction.p);
+          SurfaceInteraction shadow_it;
+          if (scene->intersect(test_ray, shadow_it)) {
+            continue;
+          }
+
+          Float cos_theta_i =
+              Dot(light_dir, interaction.normal);  //$\cos\theta_i$
+          Float cos_theta_o =
+              Dot(-light_dir, light_interaction.normal);  // $\cos\theta_o$
+
+          if (cos_theta_i <= 0 || cos_theta_o <= 0) {
+            continue;
+          }
+
+          Vec3f f_r = bsdf->evaluate(interaction);
+
+          //  G =|cos_theta_o|/(|p - p'|^2)
+          Float G = cos_theta_o / (dist * dist);
+
+          Vec3f Le = area_light->Le(light_interaction, -light_dir);
+
+          Vec3f contribution =
+              f_r * Le * cos_theta_i * G * (1.0F / light_interaction.pdf);
+
+          L_dir += contribution;
+        }
+
+        color += L_dir / AREA_LIGHT_SAMPLES;
+      }
+    }
   }
 
   return color;
